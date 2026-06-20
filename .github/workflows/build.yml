@@ -19,22 +19,20 @@ jobs:
           distribution: 'temurin'
 
       - name: Create local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "Android SDK: $ANDROID_HOME"
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Install Android SDK components
+      - name: Install Android SDK
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
-            "platforms;android-34" \
-            "build-tools;34.0.0" \
-            "platform-tools" 2>/dev/null || true
+            "platforms;android-34" "build-tools;34.0.0" 2>/dev/null || true
 
-      - name: Generate Gradle wrapper
-        run: gradle wrapper --gradle-version 8.5
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10'
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
