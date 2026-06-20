@@ -5,7 +5,6 @@ plugins {
 android {
     namespace 'com.athenang.mary'
     compileSdk 34
-
     defaultConfig {
         applicationId "com.athenang.mary"
         minSdk 24
@@ -13,23 +12,13 @@ android {
         versionCode 1
         versionName "1.0"
     }
-
     buildTypes {
-        debug {
-            minifyEnabled false
-            debuggable true
-        }
-        release {
-            minifyEnabled false
-        }
+        debug { debuggable true }
     }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
 
-dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-}
+// Nessuna dipendenza esterna!
