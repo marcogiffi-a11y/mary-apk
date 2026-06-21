@@ -226,7 +226,28 @@ function speak(text) {
 }
 
 // ── Mic ───────────────────────────────────────────────────────────────────────
+// ── Callback dal SpeechRecognizer nativo Android ────────────────────────────
+function onMicReady() { setMicState('listening'); setStatus('Ti sto ascoltando...') }
+function onSpeechResult(text) { sendMessage(text) }
+function onMicStopped() { setMicState('idle'); setStatus('Mary pronta') }
+function onMicError(code) {
+  setMicState('idle')
+  if (code===7) setStatus('Nessun parlato rilevato — ripremi per riprovare')
+  else setStatus('Errore microfono ('+code+')')
+}
+
 function toggleMic() {
+  if (window.MicBridge) {
+    // Usa il ponte nativo Android
+    if (document.getElementById('micBtn').classList.contains('listening')) {
+      MicBridge.stopListening()
+    } else {
+      setMicState('listening'); setStatus('Avvio microfono...')
+      MicBridge.startListening()
+    }
+    return
+  }
+  // Fallback Web Speech API (browser)
   if (keepListening) {
     keepListening = false
     try { recognition && recognition.stop() } catch {}
