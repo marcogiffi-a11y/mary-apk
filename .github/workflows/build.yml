@@ -25,20 +25,12 @@ jobs:
           gradle-version: '8.10'
       - name: Build APK
         run: gradle assembleDebug --no-daemon
-      - name: Verify APK exists
-        run: ls -la app/build/outputs/apk/debug/
-      - name: Upload as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mary-v2-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
-      - name: Create Release v2
+      - name: Create Release v3
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.0
-          name: "Mary App v2.0 - Standalone"
-          body: "Mary con HTML standalone, icona microfono oro, controllo Shelly locale"
+          tag_name: v3.0
+          name: "Mary App v3.0 - Shelly Auto-Scan"
+          body: "Rilevamento automatico Shelly, HTML standalone, icona oro"
           files: app/build/outputs/apk/debug/app-debug.apk
           make_latest: true
           fail_on_unmatched_files: true
