@@ -85,6 +85,9 @@ body{min-height:100vh;background:#0a0805;font-family:Georgia,serif;display:flex;
 <div class="panel" id="panel">
   <h3>DISPOSITIVI SHELLY</h3>
   <p>Premi "Scansiona" per trovare automaticamente gli Shelly sulla tua rete WiFi di casa.</p>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input id="subnetInput" placeholder="Subnet (es. 192.168.1)" style="flex:1;background:#1a1508;border:1px solid rgba(216,184,74,.3);border-radius:8px;padding:8px 12px;color:#f2ead6;font-size:13px;outline:none">
+  </div>
   <button class="scan-btn" onclick="scanNetwork()">🔍 SCANSIONA RETE</button>
   <div id="scanProgress"></div>
   <div id="deviceList"></div>
@@ -106,69 +109,78 @@ async function scanNetwork() {
   const prog = document.getElementById('scanProgress')
   const list = document.getElementById('deviceList')
   list.innerHTML = ''
-  prog.textContent = 'Rilevamento subnet...'
 
-  // Trova subnet dal gateway (tentativo con IP comuni)
-  const subnets = ['192.168.1', '192.168.0', '10.0.0', '10.0.1', '192.168.2']
+  // Prendi subnet da input manuale o prova quelli comuni
+  const manualSubnet = document.getElementById('subnetInput').value.trim()
+  const subnets = manualSubnet
+    ? [manualSubnet]
+    : ['192.168.1','192.168.0','192.168.2','192.168.100','10.0.0','10.0.1','172.16.0','172.16.1']
   const found = []
 
   for (const subnet of subnets) {
-    prog.textContent = `Scansiono ${subnet}.x — trovati: ${found.length}`
-    
-    // Scansiona 1-254 in batch paralleli da 30
-    for (let start = 1; start <= 254; start += 30) {
+    prog.textContent = `Scansiono ${subnet}.x...`
+    for (let start = 1; start <= 254; start += 40) {
       const batch = []
-      for (let i = start; i < Math.min(start+30, 255); i++) {
+      for (let i = start; i < Math.min(start+40, 255); i++) {
         batch.push(checkShelly(`${subnet}.${i}`))
       }
       const results = await Promise.allSettled(batch)
       results.forEach(r => { if (r.status==='fulfilled' && r.value) found.push(r.value) })
-      prog.textContent = `Scansiono ${subnet}.x — trovati: ${found.length} — IP: ${subnet}.${Math.min(start+29,254)}`
+      prog.textContent = `${subnet}.x — IP ${Math.min(start+39,254)}/254 — trovati: ${found.length}`
     }
-    if (found.length > 0) break // trovato qualcosa, stop
+    if (found.length > 0) break
   }
 
   if (found.length === 0) {
-    prog.textContent = 'Nessun Shelly trovato. Controlla di essere connesso al WiFi di casa.'
+    prog.innerHTML = 'Nessun Shelly trovato.<br><small>Prova ad inserire il subnet del tuo router qui sopra (es. 192.168.1)</small>'
     return
   }
 
-  prog.textContent = `✓ Trovati ${found.length} dispositivi Shelly!`
-
-  // Salva e mostra
+  prog.textContent = '✓ Trovati '+found.length+' dispositivi Shelly!'
   const newMap = {}
   found.forEach(d => {
     newMap[d.name] = { ip: d.ip, type: d.type }
-    list.innerHTML += `
-      <div class="device-item">
-        <div>
-          <div class="device-name">${d.name}</div>
-          <div class="device-ip">${d.ip} · ${d.type}</div>
-        </div>
-        <span class="device-status ok">TROVATO</span>
-      </div>`
+    list.innerHTML += `<div class="device-item"><div><div class="device-name">${d.name}</div><div class="device-ip">${d.ip} · ${d.type}</div></div><span class="device-status ok">TROVATO</span></div>`
   })
   shellyMap = newMap
   try { localStorage.setItem('shelly_map', JSON.stringify(shellyMap)) } catch {}
 }
 
 async function checkShelly(ip) {
+  // Prova Gen1 (/shelly) e Gen2 (/rpc/Shelly.GetDeviceInfo)
   try {
-    // Prova endpoint /shelly (Gen1) con timeout breve
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), 800)
-    const res = await fetch(`http://${ip}/shelly`, { signal: ctrl.signal })
-    clearTimeout(timer)
-    if (!res.ok) return null
-    const data = await res.json()
-    // È uno Shelly! Leggi il nome
-    const nameRes = await fetch(`http://${ip}/settings`)
-    const settings = await nameRes.json()
-    const name = settings.name || data.hostname || `Shelly-${ip}`
-    const isRoller = data.type && (data.type.includes('25') || data.type.includes('2PM'))
-    const hasRollerMode = settings.rollers && settings.rollers.length > 0
-    return { ip, name, type: (isRoller || hasRollerMode) ? 'roller' : 'relay' }
-  } catch { return null }
+    // Gen 1
+    const c1 = new AbortController()
+    const t1 = setTimeout(() => c1.abort(), 1200)
+    const r1 = await fetch(`http://${ip}/shelly`, { signal: c1.signal })
+    clearTimeout(t1)
+    if (r1.ok) {
+      const d1 = await r1.json()
+      try {
+        const s1 = await fetch(`http://${ip}/settings`)
+        const st = await s1.json()
+        const name = st.name || d1.hostname || `Shelly-${ip}`
+        const isR = (d1.type||'').includes('25') || (d1.type||'').includes('2PM') || (st.rollers||[]).length>0
+        return { ip, name, type: isR?'roller':'relay' }
+      } catch {
+        return { ip, name: d1.hostname || `Shelly-${ip}`, type:'relay' }
+      }
+    }
+  } catch {}
+  try {
+    // Gen 2
+    const c2 = new AbortController()
+    const t2 = setTimeout(() => c2.abort(), 1200)
+    const r2 = await fetch(`http://${ip}/rpc/Shelly.GetDeviceInfo`, { signal: c2.signal })
+    clearTimeout(t2)
+    if (r2.ok) {
+      const d2 = await r2.json()
+      const name = d2.name || d2.id || `Shelly-${ip}`
+      const isCover = (d2.profile||'').includes('cover') || (d2.model||'').includes('2PM')
+      return { ip, name, type: isCover?'roller':'relay' }
+    }
+  } catch {}
+  return null
 }
 
 // ── Controllo Shelly ──────────────────────────────────────────────────────────
