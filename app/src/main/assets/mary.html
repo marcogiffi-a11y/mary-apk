@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mary</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;background:#0a0805;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;color:#f2ead6;overflow-x:hidden}
+.bg{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,#1c1608,#0a0805 68%);pointer-events:none;z-index:0}
+.wrap{width:100%;max-width:480px;display:flex;flex-direction:column;align-items:center;min-height:100vh;position:relative;z-index:1}
+/* header */
+.header{width:100%;display:flex;justify-content:space-between;align-items:center;padding:28px 24px 0}
+.logo{font-size:28px;font-weight:400;letter-spacing:9px;color:#d8b84a}
+.sub{font-size:9px;letter-spacing:4px;color:#b9a463;margin-top:3px;font-family:monospace}
+.date{font-size:10px;color:#8f7f52;letter-spacing:2px}
+.btn-voice{background:none;border:1px solid #b9a463;border-radius:8px;padding:5px 9px;color:#d8b84a;cursor:pointer;font-size:15px}
+/* orb */
+.orb-wrap{position:relative;width:280px;height:240px;display:flex;align-items:center;justify-content:center;margin-top:10px}
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(216,184,74,.28);animation:pulse 3s ease-in-out infinite}
+.ring:nth-child(1){width:160px;height:160px;background:radial-gradient(circle,rgba(216,184,74,.18),transparent 70%);box-shadow:0 0 40px rgba(216,184,74,.3)}
+.ring:nth-child(2){width:210px;height:210px;animation-delay:.5s;border-color:rgba(216,184,74,.16)}
+.ring:nth-child(3){width:260px;height:260px;animation-delay:1s;border-color:rgba(216,184,74,.08)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.mic-btn{width:80px;height:80px;border-radius:50%;cursor:pointer;border:1px solid #d8b84a;font-size:30px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 40% 35%,#2a2010,#0a0805);box-shadow:0 0 30px rgba(216,184,74,.5);transition:all .3s;z-index:2;position:relative}
+.mic-btn.listening{background:linear-gradient(135deg,#e8cf6a,#b8902a);box-shadow:0 0 50px rgba(216,184,74,.8)}
+.mic-btn.speaking{background:linear-gradient(135deg,#e8a030,#d8b84a)}
+/* status */
+.status{font-size:13px;color:#f2ead6;font-style:italic;margin:14px 0;text-align:center;min-height:20px;letter-spacing:.5px}
+/* messages */
+.messages{width:100%;padding:0 16px;flex:1;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 500px);min-height:60px;overflow-y:auto}
+.msg{max-width:82%;padding:11px 14px;font-size:14px;line-height:1.5}
+.msg.user{align-self:flex-end;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px 4px 16px 16px}
+.msg.mary{align-self:flex-start;background:rgba(216,184,74,.10);border:1px solid rgba(216,184,74,.35);border-radius:4px 16px 16px 16px}
+.msg-label{font-size:9px;color:#d8b84a;letter-spacing:2px;margin-bottom:4px;font-family:monospace}
+.empty{text-align:center;color:#8f7f52;font-size:13px;margin-top:20px}
+/* input */
+.input-row{width:100%;padding:12px 16px 20px;display:flex;gap:8px}
+.input-row input{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(216,184,74,.3);border-radius:21px;padding:12px 18px;color:#f2ead6;font-size:14px;outline:none;font-family:Georgia,serif}
+.input-row input::placeholder{color:#8f7f52}
+.send-btn{background:linear-gradient(135deg,#b8902a,#d8b84a);border:none;border-radius:50%;width:50px;height:50px;color:#0a0805;cursor:pointer;font-size:18px;flex-shrink:0}
+.send-btn:disabled{background:#2a2210;color:#8f7f52;cursor:default}
+/* settings panel */
+.settings{position:fixed;bottom:0;left:0;right:0;background:#100d08;border-top:1px solid rgba(216,184,74,.3);padding:20px;z-index:100;display:none;max-height:60vh;overflow-y:auto}
+.settings.open{display:block}
+.settings h3{color:#d8b84a;font-size:11px;letter-spacing:3px;margin-bottom:14px;font-family:monospace}
+.settings label{color:#b9a463;font-size:12px;display:block;margin-bottom:4px}
+.settings input{width:100%;background:#1a1508;border:1px solid rgba(216,184,74,.3);border-radius:8px;padding:8px 12px;color:#f2ead6;font-size:13px;margin-bottom:10px;outline:none}
+.settings .save-btn{background:linear-gradient(135deg,#b8902a,#d8b84a);border:none;border-radius:8px;padding:10px 20px;color:#0a0805;cursor:pointer;font-size:13px;font-weight:bold}
+.shelly-badge{font-size:11px;color:#b9a463;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <div class="logo">MARY</div>
+      <div class="sub">ATHENA · NEXT GEN · AI</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="date" id="dateEl"></div>
+      <button class="btn-voice" onclick="toggleSettings()">⚙️</button>
+    </div>
+  </div>
+
+  <div class="orb-wrap">
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+  </div>
+
+  <div class="status" id="status">Ciao! Sono Mary</div>
+
+  <div class="messages" id="messages">
+    <div class="empty">Premi il microfono e parla con Mary</div>
+  </div>
+
+  <div class="input-row">
+    <input id="textInput" placeholder="Scrivi o parla con Mary…" onkeydown="if(event.key==='Enter')sendText()">
+    <button class="send-btn" id="sendBtn" onclick="sendText()">➤</button>
+  </div>
+</div>
+
+<!-- Settings panel -->
+<div class="settings" id="settingsPanel">
+  <h3>IMPOSTAZIONI SHELLY</h3>
+  <p style="color:#8f7f52;font-size:12px;margin-bottom:14px">Inserisci l'IP locale di ogni Shelly. Funziona solo con WiFi di casa.</p>
+  <div id="shellyFields"></div>
+  <button class="save-btn" onclick="saveShelly()">SALVA</button>
+  <div class="shelly-badge" id="shellyStatus"></div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+const VERCEL = 'https://mary-assistant.vercel.app'
+
+// Dispositivi Shelly noti (nome → canale)
+const SHELLY_DEVICES = [
+  {name:'Tapparella Salone 1', type:'roller'},
+  {name:'Tapparella Salone 2', type:'roller'},
+  {name:'Tapparella porta cucina', type:'roller'},
+  {name:'Tapparella Cameretta', type:'roller'},
+  {name:'Tapparella studio', type:'roller'},
+  {name:'Tapparella Camera', type:'roller'},
+  {name:'Tapparella 2', type:'roller'},
+  {name:'Luci studio', type:'relay'},
+  {name:'Luci ingresso', type:'relay'},
+  {name:'2) Luci corridoio', type:'relay'},
+  {name:'Bagno', type:'relay'},
+  {name:'Camera da letto matrimoniale', type:'relay'},
+  {name:'2) Camera da letto matrimoniale', type:'relay'},
+  {name:'Luce', type:'relay'},
+]
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let messages = []
+let keepListening = false
+let recognition = null
+let shellyIPs = {}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.getElementById('dateEl').textContent = new Date()
+  .toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()
+
+try { shellyIPs = JSON.parse(localStorage.getItem('shelly_ips') || '{}') } catch {}
+
+// Build settings fields
+const fields = document.getElementById('shellyFields')
+SHELLY_DEVICES.forEach(d => {
+  const ip = shellyIPs[d.name] || ''
+  fields.innerHTML += `
+    <label>${d.name} (${d.type})</label>
+    <input id="ip_${d.name.replace(/\W/g,'_')}" value="${ip}" placeholder="es. 192.168.1.50">`
+})
+
+// ── Speech synthesis ──────────────────────────────────────────────────────────
+function speak(text) {
+  try {
+    if (!window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const clean = text.replace(/SHELLY_CMD:\{[^}]*\}/g,'').trim()
+    const u = new SpeechSynthesisUtterance(clean)
+    u.lang = 'it-IT'; u.rate = 1.0; u.pitch = 1.0
+    const saved = localStorage.getItem('mary_voice')
+    const voices = window.speechSynthesis.getVoices()
+    const v = (saved && voices.find(vv=>vv.name===saved))
+      || voices.find(vv=>vv.lang.startsWith('it'))
+    if (v) u.voice = v
+    u.onstart = () => { setMicState('speaking'); setStatus('') }
+    u.onend = () => { setMicState('idle'); setStatus('Mary pronta') }
+    window.speechSynthesis.speak(u)
+  } catch(e) { console.error('TTS error',e) }
+}
+
+// ── Mic ───────────────────────────────────────────────────────────────────────
+function toggleMic() {
+  if (keepListening) {
+    keepListening = false
+    try { recognition && recognition.stop() } catch {}
+    setMicState('idle'); setStatus('Mary pronta')
+    return
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+  if (!SR) { setStatus('Microfono non supportato'); return }
+  keepListening = true
+  setMicState('listening'); setStatus('Ti sto ascoltando...')
+
+  function startRec() {
+    try {
+      const r = new SR()
+      r.lang = 'it-IT'; r.continuous = false; r.interimResults = false
+      r.onresult = e => {
+        const t = e.results[e.results.length-1][0].transcript
+        sendMessage(t)
+      }
+      r.onerror = e => {
+        if (e.error==='no-speech' && keepListening) setTimeout(startRec, 200)
+        else if (e.error!=='aborted') {
+          keepListening = false; setMicState('idle'); setStatus('Errore microfono')
+        }
+      }
+      r.onend = () => { if (keepListening) setTimeout(startRec, 200) }
+      recognition = r; r.start()
+    } catch(e) { keepListening=false; setMicState('idle'); setStatus('Errore mic: '+e.message) }
+  }
+  startRec()
+}
+
+// ── Send ──────────────────────────────────────────────────────────────────────
+function sendText() {
+  const v = document.getElementById('textInput').value.trim()
+  if (v) { document.getElementById('textInput').value=''; sendMessage(v) }
+}
+
+async function sendMessage(text) {
+  addMsg('user', text)
+  setStatus('Mary sta pensando...')
+  document.getElementById('sendBtn').disabled = true
+  try {
+    messages.push({role:'user',content:text})
+    const res = await fetch(VERCEL+'/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({messages})
+    })
+    const data = await res.json()
+    const reply = data.reply || 'Errore nel ricevere risposta'
+    messages.push({role:'assistant',content:reply})
+    addMsg('mary', reply.replace(/SHELLY_CMD:\{[^}]*\}/g,'').trim())
+    speak(reply)
+    if (reply.includes('SHELLY_CMD:')) execShelly(reply)
+  } catch(e) {
+    addMsg('mary', 'Errore di connessione: '+e.message)
+  }
+  document.getElementById('sendBtn').disabled = false
+  setStatus(keepListening ? 'Ti sto ascoltando...' : 'Mary pronta')
+}
+
+// ── Shelly locale ─────────────────────────────────────────────────────────────
+async function execShelly(reply) {
+  try {
+    const m = reply.match(/SHELLY_CMD:(\{[^}]+\})/)
+    if (!m) return
+    const cmd = JSON.parse(m[1])
+    const device = SHELLY_DEVICES.find(d =>
+      d.name.toLowerCase().includes(cmd.deviceName.toLowerCase()) ||
+      cmd.deviceName.toLowerCase().includes(d.name.toLowerCase())
+    )
+    if (!device) { setStatus('Dispositivo non trovato: '+cmd.deviceName); return }
+
+    const ip = shellyIPs[device.name]
+    if (!ip) { setStatus('IP mancante per: '+device.name+' — configura in ⚙️'); return }
+
+    setStatus('Controllo '+device.name+'...')
+    if (device.type==='roller') {
+      await fetch(`http://${ip}/roller/0?go=${cmd.command}`,{mode:'no-cors'})
+    } else {
+      await fetch(`http://${ip}/relay/0?turn=${cmd.command}`,{mode:'no-cors'})
+    }
+    setStatus('OK: '+device.name+' '+cmd.command)
+  } catch(e) { setStatus('Errore Shelly: '+e.message) }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function addMsg(role, text) {
+  const c = document.getElementById('messages')
+  // Rimuovi messaggio "empty"
+  const e = c.querySelector('.empty')
+  if (e) e.remove()
+  const d = document.createElement('div')
+  d.className = 'msg '+role
+  d.innerHTML = role==='mary' ? `<div class="msg-label">MARY</div>${text}` : text
+  c.appendChild(d)
+  d.scrollIntoView({behavior:'smooth'})
+}
+
+function setStatus(s) { document.getElementById('status').textContent = s }
+
+function setMicState(s) {
+  const b = document.getElementById('micBtn')
+  b.className = 'mic-btn'+(s!=='idle'?' '+s:'')
+  b.textContent = s==='listening' ? '🎙️' : s==='speaking' ? '🔊' : '🎤'
+}
+
+function toggleSettings() {
+  document.getElementById('settingsPanel').classList.toggle('open')
+}
+
+function saveShelly() {
+  const ips = {}
+  SHELLY_DEVICES.forEach(d => {
+    const id = 'ip_'+d.name.replace(/\W/g,'_')
+    const el = document.getElementById(id)
+    if (el && el.value.trim()) ips[d.name] = el.value.trim()
+  })
+  shellyIPs = ips
+  try { localStorage.setItem('shelly_ips', JSON.stringify(ips)) } catch {}
+  document.getElementById('shellyStatus').textContent =
+    '✓ Salvato! '+Object.keys(ips).length+' dispositivi configurati'
+  setTimeout(()=>document.getElementById('settingsPanel').classList.remove('open'), 1500)
+}
+</script>
+</body>
+</html>
