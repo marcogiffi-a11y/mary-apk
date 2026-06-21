@@ -1,54 +1,35 @@
 package com.athenang.mary;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
+import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.*;
-import android.view.Window;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity {
-    private WebView webView;
+public class MainActivity extends Activity {
+    private WebView w;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
-
-        webView = new WebView(this);
-        WebSettings s = webView.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(true);
-        s.setDatabaseEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
-        s.setAllowFileAccess(true);
-        s.setAllowContentAccess(true);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-
-        webView.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onPermissionRequest(PermissionRequest request) {
-                runOnUiThread(() -> request.grant(request.getResources()));
+    protected void onCreate(Bundle s) {
+        super.onCreate(s);
+        w = new WebView(this);
+        WebSettings ws = w.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setMediaPlaybackRequiresUserGesture(false);
+        ws.setAllowFileAccess(true);
+        ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        w.setWebViewClient(new WebViewClient());
+        w.setWebChromeClient(new WebChromeClient() {
+            public void onPermissionRequest(PermissionRequest r) {
+                r.grant(r.getResources());
             }
         });
-        webView.setWebViewClient(new WebViewClient());
-
-        // Carica HTML locale (nessun problema di SSR/crash!)
-        webView.loadUrl("file:///android_asset/mary.html");
-        setContentView(webView);
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                new String[]{Manifest.permission.RECORD_AUDIO}, 1);
-        }
+        w.loadUrl("file:///android_asset/mary.html");
+        setContentView(w);
     }
 
     @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) webView.goBack();
+        if (w.canGoBack()) w.goBack();
         else super.onBackPressed();
     }
 }
